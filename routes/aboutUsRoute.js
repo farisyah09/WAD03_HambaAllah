@@ -15,12 +15,14 @@ const errorData = JSON.parse(fs.readFileSync(errorPath, "utf8"));
 router.get("/:id", (req, res) => {
   const id = req.params.id.toLowerCase();
   const user = aboutUsData[id];
+  const error = errorData.error;
 
   if (user) {
-    res.json(user);
+    res.send(`${user.name}\n${user.nim}`);
   } else {
-    res.status(404).json(errorData);
+    res.send(`${error.code}<br>${error.message}`);
   }
 });
+
 
 module.exports = router;
