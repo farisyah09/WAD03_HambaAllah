@@ -3,7 +3,7 @@ const app = express();
 const PORT = 3000;
 
 // Import routes
-const aboutUsRoutes = require('./routes/aboutUsRoute');
+const aboutUsRoute = require('./routes/aboutUsRoute');
 
 // Use routes
 app.use('/aboutus', aboutUsRoute);
