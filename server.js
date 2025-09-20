@@ -2,8 +2,11 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-//Import routes
-const aboutUsRoutes = require('./routes/aboutUsRoutes.js');
+// Import routes
+const aboutUsRoutes = require('./routes/aboutUsRoute');
+
+// Use routes
+app.use('/aboutus', aboutUsRoute);
 
 // Base route
 app.get('/', (req, res) => {
