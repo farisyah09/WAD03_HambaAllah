@@ -4,10 +4,11 @@ const PORT = 3000;
 
 // Import routes
 const aboutUsRoute = require('./routes/aboutUsRoute');
+const greetingRoutes = require('./routes/greetingRoutes');
 
 // Use routes
 app.use('/aboutus', aboutUsRoute);
-
+app.use('/greeting', greetingRoutes);
 // Base route
 app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>');
