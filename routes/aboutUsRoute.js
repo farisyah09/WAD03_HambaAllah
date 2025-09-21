@@ -18,7 +18,7 @@ router.get("/:id", (req, res) => {
   const errorNotFound = errorData.error;
 
   if (user) {
-    res.send(`Name: ${user.name}\nNIM: ${user.nim}`);
+    res.send(`${user.name}<br>${user.nim}`);
   } else {
     res.send(`${errorNotFound.code}<br>${errorNotFound.message}`);
   }
