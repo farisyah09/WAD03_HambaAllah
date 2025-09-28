@@ -1,0 +1,23 @@
+[
+  {
+    "productName": "Kemeja Luwak",
+    "slug": "kemeja-luwak",
+    "category": "Fashion",
+    "price": 150000,
+    "owner": "farisyah09"
+  },
+  {
+    "productName": "Kemeja Batik",
+    "slug": "kemeja-batik",
+    "category": "Fashion",
+    "price": 150000,
+    "owner": "helmi12"
+  },
+  {
+    "productName": "Kemeja Kargo Jeans",
+    "slug": "kemeja-kargo-jeans",
+    "category": "Fashion",
+    "price": 150000,
+    "owner": "helmi12"
+  }
+]

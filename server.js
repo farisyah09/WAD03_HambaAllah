@@ -10,11 +10,13 @@ app.use(express.json());
 const aboutUsRoute = require('./routes/aboutUsRoute');
 const greetingRoutes = require('./routes/greetingRoutes');
 const userRoutes = require('./routes/userRoute'); // <-- TAMBAHKAN INI (Sesuaikan path jika Anda meletakkannya di folder /routes)
+const productRoutes = require("./routes/productRoute");
 
 // Use routes
 app.use('/aboutus', aboutUsRoute);
 app.use('/greeting', greetingRoutes);
 app.use('/users', userRoutes); // <-- TAMBAHKAN INI
+app.use('/products', productRoutes);
 
 // Base route
 app.get('/', (req, res) => {
