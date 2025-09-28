@@ -2,27 +2,29 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-// Middleware untuk membaca JSON dari body request // <-- TAMBAHKAN INI
-// Baris ini harus ada sebelum 'app.use' untuk rute agar berfungsi dengan benar.
-app.use(express.json());
 
-// Import routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const aboutUsRoute = require('./routes/aboutUsRoute');
 const greetingRoutes = require('./routes/greetingRoutes');
-const userRoutes = require('./routes/userRoute'); // <-- TAMBAHKAN INI (Sesuaikan path jika Anda meletakkannya di folder /routes)
+const userRoutes = require('./routes/userRoute');
 const productRoutes = require("./routes/productRoute");
+const cartRoutes = require('./routes/cartRoute');
 
-// Use routes
 app.use('/aboutus', aboutUsRoute);
 app.use('/greeting', greetingRoutes);
-app.use('/users', userRoutes); // <-- TAMBAHKAN INI
+app.use('/users', userRoutes);
 app.use('/products', productRoutes);
+app.use('/carts', cartRoutes);
 
-// Base route
+
+
+
 app.get('/', (req, res) => {
-  res.send('<h1>Hello World!</h1>');
+  res.send('<h1>Hello World!</h1>');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
