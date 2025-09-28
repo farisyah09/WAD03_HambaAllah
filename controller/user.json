@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "username": "farisyah09",
+    "name": "Farisyah",
+    "email": "farisyah09@mail.com",
+    "role": "seller"
+  },
+  {
+    "username": "abdullah23",
+    "name": "Abdullah",
+    "email": "abdullah23@mail.com",
+    "role": "buyer"
+  },
+  {
+    "username": "helmi12",
+    "name": "Helmi",
+    "email": "helmi12@mail.com",
+    "role": "seller"
+  },
+  {
+    "username": "nurul87",
+    "name": "Nurul",
+    "email": "nurul87@mail.com",
+    "role": "buyer"
+  }
+]
