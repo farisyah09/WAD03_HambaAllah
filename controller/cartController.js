@@ -43,6 +43,30 @@ const cartService = {
         return { username, items: carts[username] };
     }
 }; 
+exports.onlyBuyerCanAccessCart = (req, res, next) => {
+    const { username } = req.params;
+
+    // Cek keberadaan user
+    const user = userData.find(user => user.username === username);
+    if (!user) {
+        return res.status(404).json({
+            success: false, 
+            message:`user '${username}' not found in user database.`
+        });
+    }
+
+    // Cek role user
+    if (user.role !== 'buyer') {
+        return res.status(403).json({ // 403 Forbidden
+            success: false, 
+            message: "Only a buyer can modify this cart."
+        });
+    }
+
+    // Lanjutkan ke controller berikutnya
+    next();
+};
+
 
 // =========================================================
 // 1. Controller untuk GET /carts/:username (DITAMBAH VALIDASI USER)
@@ -93,17 +117,8 @@ exports.addItemToCart = async (req, res) => {
             }); 
         }
         
-        // --- VALIDASI USER (Integrasi) ---
-        const userExists = userData.find(user => user.username === username);
-        if (!userExists) {
-            return res.status(404).json({
-                success: false, 
-                message: `User '${username}' not found in user database.`
-            });
-        }
-        
         // --- VALIDASI PRODUCT (Integrasi) ---
-        const productExists = productData.find(product => product.product_name === productId);
+        const productExists = productData.find(product => product.productName === productId);
         if (!productExists) {
             return res.status(404).json({
                 success: false, 
