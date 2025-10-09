@@ -1,53 +1,49 @@
-const fs = require('fs');
-const path = require('path');
+const userService = require('../service/userService');
 
-const usersFilePath = path.join(__dirname, 'user.json');
-
-const readUsers = () => {
+exports.createUser = async (req, res) => {
     try {
-        const usersData = fs.readFileSync(usersFilePath);
-        return JSON.parse(usersData);
-    } catch (error) {
-        return [];
+        const newUser = await userService.createNewUser(req.body);
+        
+        // Logika HTTP: Respons sukses 201 Created
+        res.status(201).json({ 
+            message: 'User berhasil dibuat', 
+            data: newUser 
+        });
+
+    } catch (err) {
+        // Logika HTTP: Menangani error yang dilempar oleh Service
+
+        let statusCode = 400; // Default: 400 Bad Request
+
+        // Menganalisis Nama Error dari Service untuk menentukan kode HTTP
+        if (err.name === 'UsernameConflictError') {
+            statusCode = 409; // 409 Conflict
+        } 
+        // Jika bukan UsernameConflictError, gunakan default 400 Bad Request (misalnya "Semua properti harus diisi")
+        
+        res.status(statusCode).json({ 
+            error: err.message 
+        });
     }
 };
 
-const writeUsers = (users) => {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
-};
-
-exports.createUser = (req, res) => {
-    const users = readUsers();
-    const { username, name, email, role } = req.body;
-
-    if (!username || !name || !email || !role) {
-        return res.status(400).json({ message: 'Semua properti harus diisi' });
-    }
-
-    if (users.some(user => user.username === username)) {
-        return res.status(409).json({ message: 'Username sudah digunakan' });
-    }
-
-    const newUser = { username, name, email, role };
-    users.push(newUser);
-    writeUsers(users);
-
-    res.status(201).json({ message: 'User berhasil dibuat', data: newUser });
-};
-
-exports.getAllUsers = (req, res) => {
-    const users = readUsers();
+exports.getAllUsers = async (req, res) => {
+    const users = await userService.getAllUsers();
+    // Respons sukses 200 OK
     res.status(200).json(users);
 };
 
-exports.getUserByUsername = (req, res) => {
-    const users = readUsers();
+exports.getUserByUsername = async (req, res) => {
     const { username } = req.params;
-    const user = users.find(u => u.username === username);
+    const user = await userService.getUserByUsername(username);
 
-    if (user) {
-        res.status(200).json(user);
-    } else {
-        res.status(404).json({ message: 'User tidak ditemukan' });
+    // Logika HTTP: Kalau Service mengembalikan null, respons 404 Not Found
+    if (!user) {
+        return res.status(404).json({ 
+            error: 'User tidak ditemukan' 
+        });
     }
+
+    // Respons sukses 200 OK
+    res.status(200).json(user);
 };
