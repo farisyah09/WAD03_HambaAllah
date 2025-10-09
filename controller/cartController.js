@@ -3,8 +3,8 @@
 // Import data statis dari layer Controller lain untuk Validasi
 // PERBAIKAN: Menggunakan users.json (ASUMSI NAMA FILE) dan product.json
 // PERBAIKAN AKHIR: Menggunakan users.json dan products.json (ASUMSI NAMA FILE JAMAK)
-const userData = require('./user.json'); 
-const productData = require('./product.json'); 
+const userData = require('../repository/userRepository.json')
+const productData = require('../repository/productRepository.json')
 
 // In-Memory Storage untuk keranjang belanja (sesuai ekspektasi data hilang saat restart)
 const carts = {}; 
