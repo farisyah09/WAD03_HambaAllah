@@ -1,25 +1,5 @@
-const fs = require("fs");
-const path = require("path");
-
-const productFilePath = path.join(__dirname, "product.json");
-const userFilePath = path.join(__dirname, "user.json");
-
-// Helper untuk baca products
-function readProducts() {
-  const data = fs.readFileSync(productFilePath);
-  return JSON.parse(data);
-}
-
-// Helper untuk tulis products
-function writeProducts(data) {
-  fs.writeFileSync(productFilePath, JSON.stringify(data, null, 2));
-}
-
-// Helper untuk baca users
-function readUsers() {
-  const data = fs.readFileSync(userFilePath);
-  return JSON.parse(data);
-}
+const productRepository = require('../repository/productRepository');
+const userRepository = require('../repository/userRepository');
 
 // Helper untuk bikin slug otomatis
 function slugify(text) {
@@ -27,78 +7,60 @@ function slugify(text) {
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")       // ganti spasi dengan -
-    .replace(/[^\w\-]+/g, "")   // hapus karakter aneh
-    .replace(/\-\-+/g, "-");    // ganti --- jadi -
+    .replace(/\s+/g, "-") 
+    .replace(/[^\w\-]+/g, "") 
+    .replace(/\-\-+/g, "-"); 
 }
 
-/**
- * Endpoint: POST /products/
- * Deskripsi: Membuat produk baru (hanya Seller)
- */
-exports.createProduct = (req, res) => {
-  let products = readProducts();
-  let users = readUsers();
-  const { productName, category, price, owner } = req.body;
+// Fungsi helper untuk melempar error konflik (DRY)
+const throwConflictError = (message) => {
+  const error = new Error(message);
+  error.name = 'ProductConflictError'; // Custom name untuk 409
+  throw error;
+};
 
-  // Validasi field
+const createNewProduct = (productData) => {
+  const { productName, category, price, owner } = productData;
+  
+  // 1. Validasi Input
   if (!productName || !category || !price || !owner) {
-    return res.status(400).json({ message: "Semua field harus diisi!" });
+    throw new Error("Semua field harus diisi!"); // Error standar untuk 400
   }
 
-  // Cek apakah owner ada di user.json
-  const user = users.find(u => u.username === owner);
+  // 2. Cek Owner (hanya cek eksistensi, role checking sudah di Middleware)
+  const user = userRepository.findByUsername(owner);
   if (!user) {
-    return res.status(404).json({ message: "Owner (user) tidak ditemukan." });
+    const error = new Error("Owner tidak ditemukan.");
+    error.name = 'NotFoundError'; // Custom name untuk 404
+    throw error;
   }
-
-  // Hanya seller yang boleh create
-  if (user.role !== "seller") {
-    return res.status(403).json({ message: "Hanya Seller yang bisa menambah produk." });
-  }
-
-  // Generate slug otomatis
+  
+  // 3. Generate Slug dan Cek Unik
   const slug = slugify(productName);
-
-  // Cek produk dengan slug unik
-  if (products.some(p => p.slug === slug)) {
-    return res.status(409).json({ message: "Produk dengan nama ini sudah ada." });
+  const productExists = productRepository.findBySlug(slug);
+  
+  if (productExists) {
+    throwConflictError("Produk dengan nama ini sudah ada.");
   }
 
+  // 4. Simpan Data
   const newProduct = { productName, slug, category, price, owner };
-  products.push(newProduct);
-  writeProducts(products);
-
-  res.status(201).json({
-    message: "Produk berhasil dibuat",
-    data: newProduct
-  });
+  return productRepository.save(newProduct);
 };
 
-/**
- * Endpoint: GET /products/
- * Deskripsi: Menampilkan semua produk (Buyer & Seller bisa lihat)
- */
-exports.getAllProducts = (req, res) => {
-  let products = readProducts();
-  res.status(200).json(products);
+const getAllProducts = () => {
+  return productRepository.findAll();
 };
 
-/**
- * Endpoint: GET /products/:product_name
- * Deskripsi: Menampilkan detail produk berdasarkan slug
- */
-exports.getProductByName = (req, res) => {
-  let products = readProducts();
-  const { product_name } = req.params;
+const getProductBySlug = (productName) => {
+  const slugParam = slugify(productName);
+  
+  const product = productRepository.findBySlug(slugParam);
+  return product || null; 
+};
 
-  // Samakan param dengan slugify biar case-insensitive
-  const slugParam = slugify(product_name);
-
-  const product = products.find(p => p.slug === slugParam);
-  if (!product) {
-    return res.status(404).json({ message: "Produk tidak ditemukan." });
-  }
-
-  res.status(200).json(product);
+module.exports = {
+  createNewProduct,
+  getAllProducts,
+  getProductBySlug
 };
