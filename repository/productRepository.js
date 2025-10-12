@@ -1,4 +1,4 @@
-[const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 // Menentukan lokasi file data di folder yang sama (Repository)
@@ -60,4 +60,4 @@ module.exports = {
   findAll,
   findBySlug,
   save
-};]
+};

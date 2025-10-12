@@ -4,7 +4,7 @@ const productController = require("../controller/productController");
 const authMiddleware = require('../middleware/authMiddleware'); 
 
 // POST /products/
-router.post("/",authMiddleware.isSeller /<-- Middleware Otorisasi/, productController.createProduct);
+router.post("/",authMiddleware.isSeller /*<-- Middleware Otorisasi*/, productController.createProduct)
 
 // GET /products/
 router.get("/", productController.getAllProducts);
