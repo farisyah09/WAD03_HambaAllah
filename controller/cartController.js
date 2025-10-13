@@ -1,178 +1,82 @@
-// controller/cartController.js
+const cartService = require('../service/cartService');
 
-// Import data statis dari layer Controller lain untuk Validasi
-// PERBAIKAN: Menggunakan users.json (ASUMSI NAMA FILE) dan product.json
-// PERBAIKAN AKHIR: Menggunakan users.json dan products.json (ASUMSI NAMA FILE JAMAK)
-const userData = require('../repository/userRepository.json')
-const productData = require('../repository/productRepository.json')
+// Asumsi: cartService mengekspor ProductNotFoundError dan CartItemNotFoundError
 
-// In-Memory Storage untuk keranjang belanja (sesuai ekspektasi data hilang saat restart)
-const carts = {}; 
+// 1. POST Add Item To Cart
+exports.addItemToCart = async (req, res) => {
+    const buyerUsername = req.params.username;
+    const { productId, quantity } = req.body;
 
-const cartService = {
-    get: (username) => {
-        if (!carts[username]) {
-            carts[username] = [];
-        }
-        return { username, items: carts[username] };
-    }, 
-
-    add: (username, productId, quantity) => {
-        if (!carts[username]) {
-            carts[username] = [];
-        }
+    try {
+        const cartItem = await cartService.addItemToCart(buyerUsername, productId, quantity);
         
-        const existingItem = carts[username].find(item => item.productId === productId);
+        // 201 Created
+        res.status(201).json({ 
+            message: 'Produk berhasil ditambahkan ke keranjang.', 
+            data: cartItem 
+        });
 
-        if (existingItem) {
-            existingItem.quantity += parseInt(quantity);
-        } else {
-            carts[username].push({ productId, quantity: parseInt(quantity) });
+    } catch (err) {
+        // Logika HTTP: Menentukan Status Code berdasarkan Tipe Error (Gaya Produk)
+        let statusCode = 400; // Default: 400 Bad Request
+
+        // Menganalisis Nama Error
+        // Karena ProductNotFoundError dan CartItemNotFoundError di Service memiliki err.name = 'NotFoundError' (atau nama custom lain)
+        // Kita petakan ke 404
+        if (err.name === 'NotFoundError') {
+            statusCode = 404;
         }
+        // Tambahkan pengecekan untuk error lain jika ada, misal:
+        // else if (err.name === 'InvalidQuantityError') { statusCode = 422; }
 
-        return { username, items: carts[username] };
-    }, 
-
-    remove: (username, productId) => {
-        if (!carts[username]) {
-            return { username, items: [] }; 
-        }
-
-        carts[username] = carts[username].filter(item => item.productId !== productId);
-        
-        return { username, items: carts[username] };
+        res.status(statusCode).json({ 
+            error: err.message 
+        });
     }
-}; 
-exports.onlyBuyerCanAccessCart = (req, res, next) => {
+};
+
+// 2. GET Cart Items
+exports.getCartItems = (req, res) => {
     const { username } = req.params;
 
-    // Cek keberadaan user
-    const user = userData.find(user => user.username === username);
-    if (!user) {
-        return res.status(404).json({
-            success: false, 
-            message:`user '${username}' not found in user database.`
-        });
-    }
-
-    // Cek role user
-    if (user.role !== 'buyer') {
-        return res.status(403).json({ // 403 Forbidden
-            success: false, 
-            message: "Only a buyer can modify this cart."
-        });
-    }
-
-    // Lanjutkan ke controller berikutnya
-    next();
-};
-
-
-// =========================================================
-// 1. Controller untuk GET /carts/:username (DITAMBAH VALIDASI USER)
-// =========================================================
-exports.getCart = async (req, res) => {
     try {
-        const { username } = req.params; 
+        const cartItems = cartService.getCartItems(username);
         
-        // --- VALIDASI USER (Integrasi dengan users.json) ---
-        const userExists = userData.find(user => user.username === username);
-        if (!userExists) {
-            return res.status(404).json({
-                success: false, 
-                message: `User '${username}' not found in user database.`
-            });
-        }
-        // -------------------------------------------------
-
-        const cart = await cartService.get(username); 
-        
-        return res.status(200).json({ 
-            success: true, 
-            data: cart 
-        });
-
+        res.status(200).json(cartItems);
     } catch (err) {
-        return res.status(500).json({ 
-            success: false, 
-            error: err.message, 
-            message: 'Internal Server Error fetching cart.' 
+        let statusCode = 400;
+        
+        if (err.name === 'NotFoundError') {
+            statusCode = 404;
+        }
+        
+        res.status(statusCode).json({ 
+            error: err.message 
         });
     }
 };
 
-// =========================================================
-// 2. Controller untuk POST /carts/:username/add (DITAMBAH VALIDASI USER & PRODUCT)
-// =========================================================
-exports.addItemToCart = async (req, res) => {
+// 3. POST Remove Item From Cart
+exports.removeItemFromCart = (req, res) => {
+    const buyerUsername = req.params.username;
+    const { productId } = req.body;
+
     try {
-        const { username } = req.params;
-        const { productId, quantity } = req.body; 
+        cartService.removeItemFromCart(buyerUsername, productId); 
         
-        // --- VALIDASI INPUT DASAR ---
-        if (!productId || !quantity) {
-             return res.status(400).json({ 
-                success: false, 
-                message: 'Product ID and quantity are required.' 
-            }); 
-        }
-        
-        // --- VALIDASI PRODUCT (Integrasi) ---
-        const productExists = productData.find(product => product.productName === productId);
-        if (!productExists) {
-            return res.status(404).json({
-                success: false, 
-                message: `Product ID '${productId}' not found in product catalog.`
-            });
-        }
-        // -------------------------------------------------
-
-        const updatedCart = await cartService.add(username, productId, quantity);
-
-        return res.status(201).json({ 
-            success: true, 
-            message: 'Item added to cart successfully.', 
-            data: updatedCart 
+        res.status(200).json({
+            message: `Produk ID ${productId} berhasil dihapus dari keranjang.`
         });
 
     } catch (err) {
-        return res.status(500).json({ 
-            success: false, 
-            error: err.message, 
-            message: 'Internal Server Error adding item.' 
-        });
-    }
-};
-
-
-// =========================================================
-// 3. Controller untuk POST /carts/:username/remove
-// =========================================================
-exports.removeItemFromCart = async (req, res) => {
-    try {
-        const { username } = req.params;
-        const { productId } = req.body;
-
-        if (!productId) {
-             return res.status(400).json({ 
-                success: false, 
-                message: 'Product ID is required for removal.' 
-            });
+        let statusCode = 400;
+        
+        if (err.name === 'NotFoundError') {
+            statusCode = 404;
         }
         
-        const updatedCart = await cartService.remove(username, productId);
-
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Item removed from cart successfully.', 
-            data: updatedCart 
-        });
-
-    } catch (err) {
-        return res.status(500).json({ 
-            success: false, 
-            error: err.message, 
-            message: 'Internal Server Error removing item.' 
+        res.status(statusCode).json({ 
+            error: err.message 
         });
     }
 };

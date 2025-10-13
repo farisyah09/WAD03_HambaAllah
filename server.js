@@ -16,7 +16,7 @@ app.use('/aboutus', aboutUsRoute);
 app.use('/greeting', greetingRoutes);
 app.use('/users', userRoutes);
 app.use('/products', productRoutes);
-app.use('/carts', cartRoutes);
+app.use('/cart', cartRoutes);
 
 
 
