@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "productName": "Baju Koko",
+    "slug": "baju-koko",
+    "category": "Fashion",
+    "price": "100000",
+    "owner": "abdul24"
+  },
+  {
+    "productName": "Baju Denim",
+    "slug": "baju-denim",
+    "category": "Fashion",
+    "price": "100000",
+    "owner": "abdul24"
+  },
+  {
+    "productName": "Baju Flanel",
+    "slug": "baju-flanel",
+    "category": "Fashion",
+    "price": "100000",
+    "owner": "abdul24"
+  }
+]
