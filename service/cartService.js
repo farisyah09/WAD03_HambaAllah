@@ -19,7 +19,10 @@ class CartItemNotFoundError extends Error {
 // 1. ADD ITEM TO CART (ASYNC karena memanggil productRepository)
 const addItemToCart = async (username, productId, quantity) => {
     // 1. Validasi Input (Gaya Product Service)
-    if (!username || !productId || !quantity || quantity <= 0) {
+
+     quantity = parseInt(quantity, 10);
+
+    if (!username || !productId || isNaN(quantity) || quantity <= 0) {
         throw new Error('Username, Product ID, dan kuantitas yang valid harus disediakan.'); // Error standar untuk 400
     }
 
@@ -29,9 +32,11 @@ const addItemToCart = async (username, productId, quantity) => {
         // Melempar error dengan name: 'NotFoundError'
         throw new ProductNotFoundError(`Produk dengan ID ${productId} tidak ditemukan.`);
     }
-    
-    // 3. Simpan Data (cartRepository SINKRON)
-    return cartRepository.saveItem(username, productId, quantity); 
+
+    const newItem = { username, productId, quantity};
+    return cartRepository.saveItem(newItem);
+
+
 };
 
 // 2. GET CART ITEMS (SINKRON)
@@ -41,7 +46,16 @@ const getCartItems = (username) => {
         throw new Error('Username harus disediakan.');
     }
     // 2. Ambil Data
-    return cartRepository.findByUsername(username); 
+    const cartItems = cartRepository.findByUsername(username); 
+    
+    // Jika tidak ditemukan, lempar error agar Controller memproses 404
+    if (!cartItems) {
+        // Asumsi: Kita lempar error jika keranjang user benar-benar tidak ada
+        throw new CartItemNotFoundError(`Keranjang untuk user ${username} tidak ditemukan.`);
+    }
+
+    // Mengembalikan array item keranjang (bisa berupa array kosong jika user ada tapi belum ada item)
+    return cartItems;
 };
 
 // 3. REMOVE ITEM FROM CART (SINKRON)

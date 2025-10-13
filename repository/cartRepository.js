@@ -28,57 +28,63 @@ const writeCarts = (data) => {
 // PUBLIC REPOSITORY METHODS (API Data untuk Service)
 // =================================================================
 
-// Mengambil keranjang berdasarkan username
+// Mencari Cart berdasarkan username: Mengambil array item untuk username tersebut
 const findByUsername = (username) => {
-    const carts = readCarts(); 
-    return carts[username] || [];
+  const Carts = readCarts();
+  // Mengembalikan array item keranjang (atau undefined jika username tidak ada)
+  return Carts[username]; 
 };
 
 // Menambahkan atau memperbarui item di keranjang
-const saveItem = (username, productId, quantity) => { 
-    const carts = readCarts(); 
-    
-    const numericQuantity = parseInt(quantity, 10);
-    
-    if (isNaN(numericQuantity) || numericQuantity <= 0) {
-        // Validation (idealnya ini sudah diverifikasi di Service)
-        throw new Error('Kuantitas harus berupa angka positif.');
-    }
+const saveItem = (newItem) => {
+  const { username, productId } = newItem;
+  let { quantity } = newItem;
 
-    if (!carts[username]) {
-        carts[username] = [];
-    }
+  // pastikan quantity berupa number
+  quantity = parseInt(quantity, 10);
 
-    const cart = carts[username];
-    const existingItemIndex = cart.findIndex(item => item.productId === productId);
+  const carts = readCarts(); // ambil data lama
 
-    let updatedItem;
+  if (!carts[username]) {
+      // Jika user belum punya keranjang, buat array kosong untuknya
+      carts[username] = []; 
+  }
 
-    if (existingItemIndex > -1) {
-        cart[existingItemIndex].quantity += numericQuantity; 
-        updatedItem = cart[existingItemIndex];
-    } else {
-        updatedItem = { productId, quantity: numericQuantity }; 
-        cart.push(updatedItem);
-    }
-    
-    writeCarts(carts); // Tulis kembali data
-    return updatedItem;
+  // 🔹 cek apakah produk sudah ada di keranjang user
+  const cartItems = carts[username];
+  const existingItem = cartItems.find(item => item.productId === productId);
+
+  if (existingItem) {
+    // 1. Kalau sudah ada, tambahkan quantity
+    existingItem.quantity += quantity;
+    writeCarts(carts); // simpan hasil update
+    // Mengembalikan item yang diperbarui
+    return existingItem; 
+  }
+
+  // 2. Kalau belum ada, tambahkan item baru ke array keranjang user
+  cartItems.push(newItem); 
+  writeCarts(carts);
+  // Mengembalikan item baru
+  return newItem; 
 };
 
-// Menghapus item dari keranjang
+
+// Menghapus item dari keranjang (Logika Remove Cart)
 const deleteItem = (username, productId) => { 
     const carts = readCarts(); 
-    const cart = carts[username]; 
-    
-    if (!cart) return false; 
+    const cartItems = carts[username]; // Ambil array item untuk user
 
-    const initialLength = cart.length;
+    if (!cartItems) return false; // Keranjang user tidak ada
+
+    const initialLength = cartItems.length;
     
-    carts[username] = cart.filter(item => item.productId !== productId);
+    // Filter item yang tidak sesuai dengan productId
+    carts[username] = cartItems.filter(item => item.productId !== productId);
     
     writeCarts(carts); 
     
+    // Mengembalikan true jika panjang array berkurang (item berhasil dihapus)
     return carts[username].length < initialLength;
 };
 
