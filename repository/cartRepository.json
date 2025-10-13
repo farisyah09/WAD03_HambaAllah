@@ -1,1 +1,21 @@
-[]
+{
+  "helmi99": [
+    {
+      "username": "helmi99",
+      "productId": "baju-koko",
+      "quantity": 50
+    },
+    {
+      "username": "helmi99",
+      "productId": "baju-denim",
+      "quantity": 330
+    }
+  ],
+  "farisyah21": [
+    {
+      "username": "farisyah21",
+      "productId": "baju-denim",
+      "quantity": 300
+    }
+  ]
+}
