@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {User} = require('../database'); // Import model User dari database.js
 
 // Ubah path ke lokasi file Anda
 const usersFilePath = path.join(__dirname, 'userRepository.json'); 

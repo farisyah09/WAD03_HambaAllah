@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {Product} = require('../database'); // Import model Product dari database.js
 
 // Menentukan lokasi file data di folder yang sama (Repository)
 const productFilePath = path.join(__dirname, 'productRepository.json');
