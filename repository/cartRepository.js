@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {Cart} = require('../database'); // Import model Cart dari database.js
 
 // Menentukan lokasi file data di folder yang sama
 const cartFilePath = path.join(__dirname, 'cartRepository.json');
