@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const {Product} = require('../database'); // Import model Product dari database.js
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize('database', 'username', 'password', {
+  host: 'localhost',
+  dialect: 'postgres',
+});
 
 // Menentukan lokasi file data di folder yang sama (Repository)
 const productFilePath = path.join(__dirname, 'productRepository.json');
@@ -36,7 +41,7 @@ const writeProducts = (data) => {
 const findAll = () => {
   return readProducts();
 };
-
+https://github.com/farisyah09/WAD03_HambaAllah/pull/23/conflict?name=repository%252FproductRepository.js&ancestor_oid=da625be9de7ed4ebe76ca94bd9253a6c96c272b5&base_oid=3d0c67526395d0155d873160573e46074964b448&head_oid=b5f296a50d3a32c95a7cd6618779299e68ac632d
 // Mencari satu produk berdasarkan slug
 const findBySlug = (slug) => {
   const products = readProducts();

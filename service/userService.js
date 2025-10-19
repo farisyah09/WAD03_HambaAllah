@@ -1,45 +1,59 @@
 const userRepository = require('../repository/userRepository');
 
-// Fungsi helper lokal untuk melempar error konflik
 const throwConflictError = (message) => {
     const error = new Error(message);
-    error.name = 'UsernameConflictError'; // Tetap gunakan nama error yang sama
+    error.name = 'UsernameConflictError'; 
     throw error;
 };
 
-const createNewUser = (userData) => {
-    // Logika Bisnis: Validasi Input
-    const { username, name, email, role } = userData;
-    if (!username || !name || !email || !role) {
-        // Melempar Error standar untuk Bad Request
-        throw new Error('Semua properti harus diisi');
+// FUNGSI BARU: Membuat ID user otomatis (U001, U002, dst)
+const generateNewUserId = async () => {
+    const prefix = 'U';
+
+    const maxId = await userRepository.findMaxId();
+
+    let nextNumber = 1;
+    if (maxId) {
+        const numberString = maxId.substring(prefix.length); 
+        nextNumber = parseInt(numberString) + 1;
     }
 
-    // Logika Bisnis: Cek Konflik Username
-    const existingUser = userRepository.findByUsername(username);
+    const formattedNumber = nextNumber.toString().padStart(3, '0');
+
+    return `${prefix}${formattedNumber}`;
+};
+
+
+const createNewUser = async (userData) => { 
+    const { username, name, email, role } = userData;
+    
+    // Validasi Input telah dipindahkan ke Controller
+
+    const existingUser = await userRepository.findByUsername(username); 
     if (existingUser) {
         throwConflictError('Username sudah digunakan');
     }
 
-    // Logika Bisnis: Cek Konflik Email
-    const existingEmail = userRepository.findByEmail(email);
+    const existingEmail = await userRepository.findByEmail(email); 
     if (existingEmail) {
         throwConflictError('Email sudah digunakan, anda hanya bisa membuat satu akun');
     }
 
-    // Akses Data melalui Repository
-    const newUser = { username, name, email, role };
-    return userRepository.save(newUser);
+    // PERBAIKAN: Generate ID baru
+    const newId = await generateNewUserId();
+
+    // PERBAIKAN: Menambahkan ID ke objek newUser
+    const newUser = { id: newId, username, name, email, role };
+    return await userRepository.save(newUser); 
 };
 
-const getAllUsers = () => {
-    return userRepository.findAll();
+const getAllUsers = async () => { 
+    return await userRepository.findAll(); 
 };
 
-const getUserByUsername = (username) => {
-    const user = userRepository.findByUsername(username);
+const getUserByUsername = async (username) => { 
+    const user = await userRepository.findByUsername(username);
     
-    // Mengembalikan null jika tidak ditemukan (untuk 404)
     if (!user) {
         return null; 
     }
@@ -51,4 +65,3 @@ module.exports = {
     createNewUser,
     getAllUsers,
     getUserByUsername
-};
