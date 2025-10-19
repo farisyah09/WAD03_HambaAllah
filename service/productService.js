@@ -1,7 +1,7 @@
 const productRepository = require('../repository/productRepository');
 const userRepository = require('../repository/userRepository');
 
-// Helper untuk bikin slug otomatis
+// FUNGSI BANTU: Membuat slug dari nama produk
 function slugify(text) {
   return text
     .toString()
@@ -12,50 +12,77 @@ function slugify(text) {
     .replace(/\-\-+/g, "-"); 
 }
 
-// Fungsi helper untuk melempar error konflik (DRY)
+// FUNGSI BARU: Membuat ID produk otomatis (P001, dll.)
+const generateNewProductId = async (ownerUsername) => {
+    const ownerPrefix = ownerUsername.substring(0, 2).toUpperCase();
+
+    const maxId = await productRepository.findMaxIdByOwnerPrefix(ownerPrefix);
+
+    let nextNumber = 1;
+    if (maxId) {
+        const numberString = maxId.substring(ownerPrefix.length); 
+        nextNumber = parseInt(numberString) + 1;
+    }
+
+    const formattedNumber = nextNumber.toString().padStart(3, '0');
+
+    return `${ownerPrefix}${formattedNumber}`;
+};
+
 const throwConflictError = (message) => {
   const error = new Error(message);
-  error.name = 'ProductConflictError'; // Custom name untuk 409
+  error.name = 'ProductConflictError'; 
   throw error;
 };
 
-const createNewProduct = (productData) => {
+const createNewProduct = async (productData) => { // PERBAIKAN: Menambah ASYNC
   const { productName, category, price, owner } = productData;
   
-  // 1. Validasi Input
+  // Validasi Input telah dipindahkan ke Controller
+  /*
   if (!productName || !category || !price || !owner) {
-    throw new Error("Semua field harus diisi!"); // Error standar untuk 400
+    throw new Error("Semua field harus diisi!");
   }
+  */
 
-  // 2. Cek Owner (hanya cek eksistensi, role checking sudah di Middleware)
-  const user = userRepository.findByUsername(owner);
+  const user = await userRepository.findByUsername(owner); // PERBAIKAN: Menambah AWAIT
   if (!user) {
     const error = new Error("Owner tidak ditemukan.");
-    error.name = 'NotFoundError'; // Custom name untuk 404
+    error.name = 'NotFoundError'; 
     throw error;
   }
   
-  // 3. Generate Slug dan Cek Unik
+  
   const slug = slugify(productName);
-  const productExists = productRepository.findBySlug(slug);
+  const productExists = await productRepository.findBySlug(slug); // PERBAIKAN: Menambah AWAIT
   
   if (productExists) {
     throwConflictError("Produk dengan nama ini sudah ada.");
   }
 
-  // 4. Simpan Data
-  const newProduct = { productName, slug, category, price, owner };
-  return productRepository.save(newProduct);
+  // PERBAIKAN: Generate ID baru
+  const newId = await generateNewProductId(owner);
+
+  // PERBAIKAN: Menambahkan ID dan mengubah productName -> name
+  const newProduct = { 
+      id: newId, 
+      name: productName, 
+      slug: slug, 
+      category: category, 
+      price: price, 
+      owner: owner 
+  };
+  return await productRepository.save(newProduct); // PERBAIKAN: Menambah AWAIT
 };
 
-const getAllProducts = () => {
-  return productRepository.findAll();
+const getAllProducts = async () => { // PERBAIKAN: Menambah ASYNC
+  return await productRepository.findAll();
 };
 
-const getProductBySlug = (productName) => {
+const getProductBySlug = async (productName) => { // PERBAIKAN: Menambah ASYNC
   const slugParam = slugify(productName);
   
-  const product = productRepository.findBySlug(slugParam);
+  const product = await productRepository.findBySlug(slugParam);
   return product || null; 
 };
 
