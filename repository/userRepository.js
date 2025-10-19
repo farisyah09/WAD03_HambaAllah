@@ -1,52 +1,59 @@
-const fs = require('fs');
-const path = require('path');
+const { User } = require('../database');
+const { Op } = require('sequelize');
 
-// Ubah path ke lokasi file Anda
-const usersFilePath = path.join(__dirname, 'userRepository.json'); 
-
-const readUsers = () => {
-    try {
-        const usersData = fs.readFileSync(usersFilePath, 'utf-8');
-        return JSON.parse(usersData);
-    } catch (error) {
-        // Jika file tidak ada atau rusak, kembalikan array kosong
-        if (error.code === 'ENOENT' || error.message.includes('Unexpected end of JSON input')) {
-            return [];
-        }
-        throw error;
-    }
+const findAll = async () => {
+    // PERBAIKAN: Menggunakan Sequelize dan menyertakan 'id'
+    return await User.findAll({
+        attributes: ['id', 'username', 'name', 'email', 'role']
+    });
 };
 
-const writeUsers = (users) => {
-    fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
+const findByUsername = async (username) => {
+    // PERBAIKAN: Menggunakan Sequelize
+    const user = await User.findOne({ 
+        where: { username },
+        attributes: ['id', 'username', 'name', 'email', 'role']
+    });
+    return user ? user.toJSON() : null;
 };
 
-const findAll = () => {
-    return readUsers();
+const findByEmail = async (email) => {
+    // PERBAIKAN: Menggunakan Sequelize
+    const user = await User.findOne({ 
+        where: { email },
+        attributes: ['id', 'username', 'name', 'email', 'role']
+    });
+    return user ? user.toJSON() : null;
 };
 
-const findByUsername = (username) => {
-    const users = readUsers();
-    return users.find(u => u.username === username);
+const findMaxId = async () => {
+    // FUNGSI BARU: Mencari ID terbesar dengan prefix 'U'
+    const prefix = 'U';
+    const user = await User.findOne({
+        attributes: ['id'],
+        where: {
+            id: {
+                [Op.startsWith]: prefix
+            }
+        },
+        order: [
+            [User.sequelize.literal('CAST(SUBSTRING("id", 2) AS INTEGER)'), 'DESC'] 
+        ],
+        limit: 1
+    });
+    return user ? user.id : null;
 };
 
-const findByEmail = (email) => {
-    const users = readUsers();
-    return users.find(u => u.email === email);
+
+const save = async (newUser) => {
+    // PERBAIKAN: Menggunakan Sequelize
+    const user = await User.create(newUser);
+    return user.toJSON();
 };
 
-
-const save = (newUser) => {
-    const users = readUsers();
-    users.push(newUser);
-    writeUsers(users);
-    return newUser;
-};
-
-// Exports Gabungan (module.exports) untuk Interface Modul
 module.exports = {
     findAll,
     findByUsername,
     findByEmail,
+    findMaxId, 
     save
-};

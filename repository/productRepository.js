@@ -1,5 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize('database', 'username', 'password', {
+  host: 'localhost',
+  dialect: 'postgres',
+});
 
 // Menentukan lokasi file data di folder yang sama (Repository)
 const productFilePath = path.join(__dirname, 'productRepository.json');
