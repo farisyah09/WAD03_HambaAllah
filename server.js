@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
+// inisialisasi database
+const db = require('./database');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -25,6 +27,18 @@ app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+(async () => {
+  try {
+    await db.sequelize.authenticate();
+    console.log('Connection has been established successfully.');
+
+    await db.sequelize.sync({ alter: true });
+    console.log("Tables have been synchronized.");
+
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('Database connection failed:', err);
+  }
+})(); // Panggil fungsi untuk memulai server
