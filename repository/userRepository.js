@@ -56,4 +56,4 @@ module.exports = {
     findByUsername,
     findByEmail,
     findMaxId, 
-    save
+    save };
