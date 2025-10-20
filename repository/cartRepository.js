@@ -1,96 +1,62 @@
-const fs = require('fs');
-const path = require('path');
+const { Cart, Product, User } = require('../database');
+const { Op } = require('sequelize');
 
-// Menentukan lokasi file data di folder yang sama
-const cartFilePath = path.join(__dirname, 'cartRepository.json');
+// Fungsi untuk menyimpan atau mengupdate item keranjang (UPSERT)
+const saveItem = async (newItem) => {
+    const { userId, productId, quantity } = newItem;
+    
+    const existingCart = await Cart.findOne({
+        where: { userId, productId }
+    });
 
-// --- Helper I/O (Sinkron) ---
-// Diubah dari readCartsFromFile
-const readCarts = () => {
-    try {
-        const data = fs.readFileSync(cartFilePath, 'utf-8');
-        // Catatan: Cart disimpan sebagai objek { username: [item1, item2] }, bukan array
-        return JSON.parse(data); 
-    } catch (error) {
-        if (error.code === 'ENOENT' || error.message.includes('Unexpected end of JSON input')) {
-            return {}; // Cart harus dimulai dengan objek kosong
-        }
-        throw error;
+    if (existingCart) {
+        existingCart.quantity += quantity;
+        await existingCart.save();
+        return existingCart.toJSON();
+    } else {
+        const newCart = await Cart.create({ userId, productId, quantity });
+        return newCart.toJSON();
     }
 };
 
-// Diubah dari writeCartsToFile
-const writeCarts = (data) => {
-    fs.writeFileSync(cartFilePath, JSON.stringify(data, null, 2));
-};
-
-// =================================================================
-// PUBLIC REPOSITORY METHODS (API Data untuk Service)
-// =================================================================
-
-// Mencari Cart berdasarkan username: Mengambil array item untuk username tersebut
-const findByUsername = (username) => {
-  const Carts = readCarts();
-  // Mengembalikan array item keranjang (atau undefined jika username tidak ada)
-  return Carts[username]; 
-};
-
-// Menambahkan atau memperbarui item di keranjang
-const saveItem = (newItem) => {
-  const { username, productId } = newItem;
-  let { quantity } = newItem;
-
-  // pastikan quantity berupa number
-  quantity = parseInt(quantity, 10);
-
-  const carts = readCarts(); // ambil data lama
-
-  if (!carts[username]) {
-      // Jika user belum punya keranjang, buat array kosong untuknya
-      carts[username] = []; 
-  }
-
-  // 🔹 cek apakah produk sudah ada di keranjang user
-  const cartItems = carts[username];
-  const existingItem = cartItems.find(item => item.productId === productId);
-
-  if (existingItem) {
-    // 1. Kalau sudah ada, tambahkan quantity
-    existingItem.quantity += quantity;
-    writeCarts(carts); // simpan hasil update
-    // Mengembalikan item yang diperbarui
-    return existingItem; 
-  }
-
-  // 2. Kalau belum ada, tambahkan item baru ke array keranjang user
-  cartItems.push(newItem); 
-  writeCarts(carts);
-  // Mengembalikan item baru
-  return newItem; 
-};
-
-
-// Menghapus item dari keranjang (Logika Remove Cart)
-const deleteItem = (username, productId) => { 
-    const carts = readCarts(); 
-    const cartItems = carts[username]; // Ambil array item untuk user
-
-    if (!cartItems) return false; // Keranjang user tidak ada
-
-    const initialLength = cartItems.length;
+// Fungsi untuk mengambil semua item keranjang user (JOIN Product)
+const findByUserId = async (userId) => {
+    // Eager loading (JOIN) ke tabel Product
+    const cartItems = await Cart.findAll({
+        where: { userId },
+        include: [{ 
+            model: Product, 
+            as: 'Product',
+            attributes: ['id', 'name', 'slug', 'category', 'price', 'owner'] 
+        }],
+        attributes: ['quantity', 'createdAt'] 
+    });
     
-    // Filter item yang tidak sesuai dengan productId
-    carts[username] = cartItems.filter(item => item.productId !== productId);
-    
-    writeCarts(carts); 
-    
-    // Mengembalikan true jika panjang array berkurang (item berhasil dihapus)
-    return carts[username].length < initialLength;
+    // Map hasil untuk output yang bersih
+    return cartItems.map(item => {
+        const itemObj = item.toJSON();
+        return {
+            productId: itemObj.Product.id,
+            productName: itemObj.Product.name,
+            category: itemObj.Product.category,
+            price: itemObj.Product.price,
+            owner: itemObj.Product.owner,
+            quantity: itemObj.quantity,
+            addedAt: itemObj.createdAt
+        };
+    });
 };
 
-// Mengekspor fungsi-fungsi publik
+// Fungsi untuk menghapus item keranjang
+const deleteItem = async (userId, productId) => {
+    const result = await Cart.destroy({
+        where: { userId, productId }
+    });
+    return result; 
+};
+
 module.exports = {
-    findByUsername,
     saveItem,
-    deleteItem
+    findByUserId,
+    deleteItem,
 };

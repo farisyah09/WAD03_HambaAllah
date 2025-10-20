@@ -1,85 +1,72 @@
 const cartRepository = require('../repository/cartRepository');
 const productRepository = require('../repository/productRepository'); 
+const userRepository = require('../repository/userRepository');
 
-// --- Custom Errors ---
-// Menggunakan 'NotFoundError' agar konsisten dengan gaya ProductController/Service
-class ProductNotFoundError extends Error {
+class NotFoundError extends Error {
     constructor(message) {
         super(message);
-        this.name = 'NotFoundError'; // Custom name untuk 404 Not Found
-    }
-}
-class CartItemNotFoundError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'NotFoundError'; // Custom name untuk 404 Not Found
+        this.name = 'NotFoundError'; 
     }
 }
 
-// 1. ADD ITEM TO CART (ASYNC karena memanggil productRepository)
+// 1. ADD ITEM TO CART
 const addItemToCart = async (username, productId, quantity) => {
-    // 1. Validasi Input (Gaya Product Service)
-
-     quantity = parseInt(quantity, 10);
-
-    if (!username || !productId || isNaN(quantity) || quantity <= 0) {
-        throw new Error('Username, Product ID, dan kuantitas yang valid harus disediakan.'); // Error standar untuk 400
-    }
-
-    // 2. Cek Produk (ASUMSI: productRepository.findBySlug ASYNC)
-    const product = await productRepository.findBySlug(productId); 
-    if (!product) {
-        // Melempar error dengan name: 'NotFoundError'
-        throw new ProductNotFoundError(`Produk dengan ID ${productId} tidak ditemukan.`);
-    }
-
-    const newItem = { username, productId, quantity};
-    return cartRepository.saveItem(newItem);
-
-
-};
-
-// 2. GET CART ITEMS (SINKRON)
-const getCartItems = (username) => {
-    // 1. Validasi Input
-    if (!username) {
-        throw new Error('Username harus disediakan.');
-    }
-    // 2. Ambil Data
-    const cartItems = cartRepository.findByUsername(username); 
+    // 1. Validasi Input (Dihapus)
     
-    // Jika tidak ditemukan, lempar error agar Controller memproses 404
-    if (!cartItems) {
-        // Asumsi: Kita lempar error jika keranjang user benar-benar tidak ada
-        throw new CartItemNotFoundError(`Keranjang untuk user ${username} tidak ditemukan.`);
+    // 2. Cek Eksistensi Product (Cari berdasarkan ID)
+    // Product ID dikirim di body, kita asumsikan productRepository punya findById
+    const product = await productRepository.findByID(productId); 
+    if (!product) {
+        throw new NotFoundError(`Produk dengan ID ${productId} tidak ditemukan.`);
     }
 
-    // Mengembalikan array item keranjang (bisa berupa array kosong jika user ada tapi belum ada item)
-    return cartItems;
+    // 3. Cek Eksistensi User & Dapatkan User ID
+    // User dicari berdasarkan username (dari params)
+    const user = await userRepository.findByUsername(username); 
+    if (!user) {
+        throw new NotFoundError(`User ${username} tidak ditemukan.`);
+    }
+
+    // 4. Proses Simpan/Update Cart Item
+    const newItemData = { 
+        userId: user.id, // Menggunakan ID User (U001)
+        productId: product.id, // Menggunakan ID Product (Pxx001)
+        quantity: quantity
+    };
+    
+    return await cartRepository.saveItem(newItemData);
 };
 
-// 3. REMOVE ITEM FROM CART (SINKRON)
-const removeItemFromCart = (username, productId) => { 
-    // 1. Validasi Input
-    if (!username || !productId) {
-        throw new Error('Username dan Product ID harus disediakan.');
+// 2. GET CART ITEMS
+const getCartItems = async (username) => {
+    // 1. Dapatkan User ID
+    const user = await userRepository.findByUsername(username); 
+    if (!user) {
+        throw new NotFoundError(`Keranjang untuk user ${username} tidak ditemukan.`);
+    }
+    
+    // 2. Ambil Item Cart dari Repository
+    return await cartRepository.findByUserId(user.id); 
+};
+
+// 3. REMOVE ITEM FROM CART
+const removeItemFromCart = async (username, productId) => { 
+    // 1. Dapatkan User ID
+    const user = await userRepository.findByUsername(username); 
+    if (!user) {
+        throw new NotFoundError(`User ${username} tidak ditemukan.`);
     }
 
-    // 2. Hapus Item
-    const wasDeleted = cartRepository.deleteItem(username, productId);
+    // 2. Hapus Item di Repository
+    const wasDeleted = await cartRepository.deleteItem(user.id, productId);
 
-    if (!wasDeleted) {
-        // Melempar error dengan name: 'NotFoundError'
-        throw new CartItemNotFoundError(`Produk ID ${productId} tidak ditemukan di keranjang.`);
+    if (wasDeleted === 0) {
+        throw new NotFoundError(`Produk ID ${productId} tidak ditemukan di keranjang user ${username}.`);
     }
 };
 
-// ✅ Sesuai Gaya Produk: Menggunakan module.exports di akhir
 module.exports = {
     addItemToCart,
     getCartItems,
-    removeItemFromCart,
-    // Ekspor Class Errors agar bisa diakses di Controller
-    ProductNotFoundError,
-    CartItemNotFoundError
+    removeItemFromCart
 };
