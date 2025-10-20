@@ -16,6 +16,13 @@ const findBySlug = async (slug) => {
   });
 };
 
+const findByID = async (id) => {
+  // PERBAIKAN: Menggunakan Sequelize
+  return await Product.findOne({
+    where: { id }
+  });
+};
+
 // FUNGSI BARU: Mencari ID terbesar berdasarkan prefix owner
 const findMaxIdByOwnerPrefix = async (prefix) => {
   const product = await Product.findOne({
@@ -42,6 +49,7 @@ const save = async (newProduct) => {
 module.exports = {
   findAll,
   findBySlug,
+  findByID,
   findMaxIdByOwnerPrefix,
   save
 };
